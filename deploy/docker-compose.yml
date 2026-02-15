@@ -5,6 +5,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MODEL_PATH=models/model.keras
-      - LABEL_MAP_PATH=models/label_map.json
-      - LOG_LEVEL=INFO
+      - MODEL_PATH=/app/models/model.keras
+      - LABEL_MAP_PATH=/app/models/label_map.json
+    volumes:
+      - ../models:/app/models:ro
