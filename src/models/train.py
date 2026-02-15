@@ -31,6 +31,71 @@ from src.models.dataset import load_splits_csv, make_tf_dataset, augmentation_la
 from src.models.modeling import build_baseline_cnn, build_mobilenetv2_transfer
 from src.models.eval import compute_metrics, save_confusion_matrix, save_training_curves, save_metrics_json
 
+def infer_label_map_from_df(df) -> Dict[str, str]:
+    """Infer idx->class mapping for binary labels {0,1} by inspecting paths.
+
+    This prevents the common 'cat/dog swapped' bug caused by hard-coded label order.
+    We majority-vote which numeric label corresponds to files containing 'cat'/'dog'
+    in the filename or path.
+
+    Expected df columns (one of):
+      - path / filepath / file_path / rel_path / image_path / filename
+    And a label column named 'label'.
+
+    If inference is unreliable, falls back to {"0": "cat", "1": "dog"}.
+    """
+    try:
+        import pandas as pd  # type: ignore
+        if not isinstance(df, pd.DataFrame):
+            return {"0": "cat", "1": "dog"}
+    except Exception:
+        # If pandas isn't importable for any reason, keep a safe default
+        return {"0": "cat", "1": "dog"}
+
+    if "label" not in df.columns:
+        return {"0": "cat", "1": "dog"}
+
+    path_cols = [c for c in ["path", "filepath", "file_path", "rel_path", "image_path", "filename"] if c in df.columns]
+    if not path_cols:
+        # If your CSV uses a different column name, add it above.
+        return {"0": "cat", "1": "dog"}
+
+    pcol = path_cols[0]
+    votes = {"cat": [], "dog": []}
+
+    for _, row in df.iterrows():
+        p = str(row[pcol]).lower()
+        try:
+            y = int(row["label"])
+        except Exception:
+            continue
+
+        # Match common patterns from Kaggle datasets
+        if "cat" in p:
+            votes["cat"].append(y)
+        if "dog" in p:
+            votes["dog"].append(y)
+
+    # Need enough evidence for both classes
+    if len(votes["cat"]) < 5 or len(votes["dog"]) < 5:
+        return {"0": "cat", "1": "dog"}
+
+    cat_major = int(np.bincount(np.array(votes["cat"], dtype=int), minlength=2).argmax())
+    dog_major = int(np.bincount(np.array(votes["dog"], dtype=int), minlength=2).argmax())
+
+    if cat_major == dog_major:
+        # Ambiguous mapping
+        return {"0": "cat", "1": "dog"}
+
+    idx_to_class = {str(cat_major): "cat", str(dog_major): "dog"}
+
+    # Ensure both keys exist
+    if "0" not in idx_to_class or "1" not in idx_to_class:
+        idx_to_class = {"0": idx_to_class.get("0", "cat"), "1": idx_to_class.get("1", "dog")}
+
+    return idx_to_class
+
+
 
 def compile_model(model: tf.keras.Model, lr: float) -> tf.keras.Model:
     model.compile(
@@ -123,10 +188,14 @@ def main() -> None:
             mlflow.log_metric(k, float(v))
 
         # Artifacts
+        # Infer correct idx->class mapping from the training split (prevents cat/dog swap bugs)
+        label_map = infer_label_map_from_df(df_train)  # {"0":"cat","1":"dog"} or swapped if dataset labels are swapped
+        cm_labels = (label_map.get("0", "cat"), label_map.get("1", "dog"))
+
         reports_dir.mkdir(parents=True, exist_ok=True)
         cm_path = reports_dir / "confusion_matrix.png"
         curves_path = reports_dir / "training_curves.png"
-        save_confusion_matrix(y_true, y_pred, cm_path, labels=("cat", "dog"))
+        save_confusion_matrix(y_true, y_pred, cm_path, labels=cm_labels)
         save_training_curves(history, curves_path)
 
         mlflow.log_artifact(str(cm_path))
@@ -136,7 +205,6 @@ def main() -> None:
         model_path.parent.mkdir(parents=True, exist_ok=True)
         model.save(model_path)
 
-        label_map = {"0": "cat", "1": "dog"}
         label_map_path.write_text(json.dumps(label_map, indent=2), encoding="utf-8")
 
         mlflow.log_artifact(str(model_path))

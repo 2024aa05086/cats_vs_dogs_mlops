@@ -1,7 +1,9 @@
 services:
-  inference:
-    build: ..
-    image: cats-dogs-inference:latest
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: ghcr.io/${GITHUB_REPO_OWNER:-local}/cats-dogs-inference:api
     ports:
       - "8000:8000"
     environment:
@@ -9,3 +11,15 @@ services:
       - LABEL_MAP_PATH=/app/models/label_map.json
     volumes:
       - ../models:/app/models:ro
+
+  ui:
+    build:
+      context: ..
+      dockerfile: Dockerfile.ui
+    image: ghcr.io/${GITHUB_REPO_OWNER:-local}/cats-dogs-inference:ui
+    ports:
+      - "7860:7860"
+    environment:
+      - API_URL=http://api:8000/predict
+    depends_on:
+      - api
