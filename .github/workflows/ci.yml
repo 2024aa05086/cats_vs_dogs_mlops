@@ -28,7 +28,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest -q
+          PYTHONPATH=$GITHUB_WORKSPACE pytest -q
 
       - name: Log in to GHCR
         if: github.ref == 'refs/heads/main'

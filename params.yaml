@@ -1,6 +1,5 @@
 data:
-  kaggle_dataset: "crawford/cat-dataset"   # placeholder; change to your chosen Kaggle dataset slug
-  # Alternative common: "tongpython/cat-and-dog"
+  kaggle_dataset: "bhavikjikadara/dog-and-cat-classification-dataset"
   raw_dir: "data/raw"
   processed_dir: "data/processed"
   image_size: 224
