@@ -27,7 +27,8 @@ stages:
     outs:
       - models/model.keras
       - models/label_map.json
-      - reports
+      - reports/confusion_matrix.png
+      - reports/training_curves.png
     metrics:
       - reports/metrics.json:
           cache: false
