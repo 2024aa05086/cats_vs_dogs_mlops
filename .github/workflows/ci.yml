@@ -26,9 +26,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Install repo package (editable)
+        run: |
+          pip install -e .
+
+      - name: Debug workspace
+        run: |
+          pwd
+          ls -la
+          find . -maxdepth 3 -type d -name src -print
+          find . -maxdepth 3 -type f -name "src.py" -print
+
       - name: Run unit tests
         run: |
-          PYTHONPATH=$GITHUB_WORKSPACE pytest -q
+         pytest -q
 
       - name: Log in to GHCR
         if: github.ref == 'refs/heads/main'
