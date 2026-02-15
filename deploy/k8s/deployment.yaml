@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cats-dogs-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cats-dogs-inference
+  template:
+    metadata:
+      labels:
+        app: cats-dogs-inference
+    spec:
+      containers:
+        - name: inference
+          image: ghcr.io/YOUR_GH_USERNAME/cats-dogs-inference:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MODEL_PATH
+              value: "models/model.keras"
+            - name: LABEL_MAP_PATH
+              value: "models/label_map.json"
+            - name: LOG_LEVEL
+              value: "INFO"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5

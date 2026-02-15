@@ -1,0 +1,26 @@
+data:
+  kaggle_dataset: "crawford/cat-dataset"   # placeholder; change to your chosen Kaggle dataset slug
+  # Alternative common: "tongpython/cat-and-dog"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  image_size: 224
+  channels: 3
+  split:
+    train: 0.8
+    val: 0.1
+    test: 0.1
+  seed: 42
+  augment: true
+
+train:
+  model_type: "mobilenetv2_transfer"  # options: baseline_cnn | mobilenetv2_transfer
+  batch_size: 32
+  epochs: 5
+  learning_rate: 0.0003
+  fine_tune_at: 120  # only for transfer learning (layer index); set -1 to disable fine-tuning
+
+paths:
+  model_path: "models/model.keras"
+  label_map_path: "models/label_map.json"
+  reports_dir: "reports"
+  mlruns_dir: "mlruns"

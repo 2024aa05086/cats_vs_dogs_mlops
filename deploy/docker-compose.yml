@@ -1,0 +1,10 @@
+services:
+  inference:
+    build: ..
+    image: cats-dogs-inference:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=models/model.keras
+      - LABEL_MAP_PATH=models/label_map.json
+      - LOG_LEVEL=INFO

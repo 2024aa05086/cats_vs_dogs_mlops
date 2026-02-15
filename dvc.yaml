@@ -1,0 +1,33 @@
+stages:
+  download:
+    cmd: python -m src.data.download_kaggle --params params.yaml
+    deps:
+      - src/data/download_kaggle.py
+      - params.yaml
+    outs:
+      - data/raw
+
+  preprocess:
+    cmd: python -m src.data.preprocess --params params.yaml
+    deps:
+      - src/data/preprocess.py
+      - params.yaml
+      - data/raw
+    outs:
+      - data/processed
+
+  train:
+    cmd: python -m src.models.train --params params.yaml
+    deps:
+      - src/models/train.py
+      - src/models/modeling.py
+      - src/models/eval.py
+      - params.yaml
+      - data/processed
+    outs:
+      - models/model.keras
+      - models/label_map.json
+      - reports
+    metrics:
+      - reports/metrics.json:
+          cache: false
