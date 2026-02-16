@@ -1,14 +1,17 @@
-name: CD (Compose on self-hosted runner)
+name: CD (Deploy)
 
 on:
-  push:
-    branches: [ "main" ]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 jobs:
   deploy:
-    # Recommended: configure a self-hosted runner on your VM/laptop where Docker Compose runs.
-    # If you don't have a self-hosted runner, switch to a kind/minikube-based deploy test.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     runs-on: self-hosted
+    permissions:
+      packages: read
+      contents: read
 
     steps:
       - name: Checkout
@@ -18,13 +21,19 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ secrets.GHCR_USERNAME }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull and deploy (Docker Compose)
+      # Pull latest images pushed by CI
+      - name: Pull latest images
         run: |
-          docker compose -f deploy/docker-compose.yml pull || true
-          docker compose -f deploy/docker-compose.yml up -d --build
+          docker pull ghcr.io/${{ github.repository_owner }}/cats-dogs-inference:api
+          docker pull ghcr.io/${{ github.repository_owner }}/cats-dogs-inference:ui
+
+      # Bring up stack (expects your deploy/docker-compose.yml uses those image tags)
+      - name: Deploy with Docker Compose
+        run: |
+          docker compose -f deploy/docker-compose.yml up -d
 
       - name: Smoke test
         run: |

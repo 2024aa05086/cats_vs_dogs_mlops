@@ -1,0 +1,58 @@
+name: Train (DVC)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"  # daily 2 AM UTC (optional)
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies (includes pinned DVC)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      # If you use kagglehub that needs auth, set these repo secrets:
+      # KAGGLE_USERNAME, KAGGLE_KEY
+      - name: Configure Kaggle creds (only if needed)
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          if [ -n "$KAGGLE_USERNAME" ] && [ -n "$KAGGLE_KEY" ]; then
+            mkdir -p ~/.kaggle
+            printf '{"username":"%s","key":"%s"}' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
+            chmod 600 ~/.kaggle/kaggle.json
+          fi
+
+      - name: Run DVC pipeline
+        run: |
+          dvc repro
+
+      # Optional: if you configured a DVC remote in .dvc/config, enable this:
+      # - name: Push artifacts to DVC remote
+      #   run: dvc push
+
+      - name: Upload model + reports artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-artifacts-${{ github.sha }}
+          path: |
+            models
+            reports
+            dvc.lock
+            params.yaml
