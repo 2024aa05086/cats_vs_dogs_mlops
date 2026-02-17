@@ -47,6 +47,15 @@ jobs:
          dvc repro train
     
 
+    - name: Verify model artifacts exist (main only)
+      if: github.ref == 'refs/heads/main'
+      run: |
+          ls -lah models || true
+          test -f models/model.keras || (echo "Missing models/model.keras" && exit 1)
+          test -f models/label_map.json || (echo "Missing models/label_map.json" && exit 1)
+
+
+
     # ---------------------------------------------------
     # Run tests
     # ---------------------------------------------------
@@ -62,6 +71,15 @@ jobs:
         ls -la
         test -f Dockerfile || (echo " Dockerfile missing" && exit 1)
         test -f Dockerfile.ui || (echo " Dockerfile.ui missing" && exit 1)
+
+    - name: DEBUG — verify model exists before docker build
+      run: |
+           echo "=== WORKSPACE ==="
+           pwd
+           ls -lah
+           echo "=== MODELS ==="
+           ls -lah models || echo "NO MODELS DIR" 
+    
 
     # ---------------------------------------------------
     # Setup Docker Buildx
