@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 # ---------------------------------------------------
-# System dependencies (needed for PIL / OpenCV / TF)
+# System dependencies (PIL/OpenCV + curl for healthcheck)
 # ---------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
@@ -20,9 +20,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------
-# Create non-root user (security best practice)
+# Create non-root user
 # ---------------------------------------------------
-RUN useradd -m appuser
+RUN useradd -m -u 10001 appuser
 
 # ---------------------------------------------------
 # Set working directory
@@ -30,32 +30,35 @@ RUN useradd -m appuser
 WORKDIR /app
 
 # ---------------------------------------------------
-# Install Python dependencies first (cache layer)
+# Install ONLY inference deps (avoid training bloat)
 # ---------------------------------------------------
-COPY requirements.txt .
+COPY requirements-api.txt .
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+    pip install -r requirements-api.txt
 
 # ---------------------------------------------------
-# Copy application source
+# Copy application code
 # ---------------------------------------------------
 COPY src ./src
 
 # ---------------------------------------------------
-# (OPTIONAL) If you want model baked into image
-# Uncomment next line ONLY if models exist during build
+# Bake model artifacts into image (required for reliable CD)
 # ---------------------------------------------------
-# COPY models ./models
+COPY models ./models
+
+# ---------------------------------------------------
+# Fix permissions for non-root runtime
+# ---------------------------------------------------
+RUN chown -R appuser:appuser /app
 
 # ---------------------------------------------------
 # Runtime configuration
 # ---------------------------------------------------
 EXPOSE 8000
-
 USER appuser
 
 # ---------------------------------------------------
-# Healthcheck (used by Docker/K8s)
+# Healthcheck
 # ---------------------------------------------------
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD curl -f http://localhost:8000/health || exit 1
