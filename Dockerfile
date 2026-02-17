@@ -32,7 +32,7 @@ WORKDIR /app
 # ---------------------------------------------------
 # Install ONLY inference deps (avoid training bloat)
 # ---------------------------------------------------
-COPY requirements-api.txt .
+COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
