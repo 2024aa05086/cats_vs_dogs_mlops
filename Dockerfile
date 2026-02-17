@@ -34,7 +34,7 @@ WORKDIR /app
 # ---------------------------------------------------
 COPY requirements-api.txt .
 RUN pip install --upgrade pip && \
-    pip install -r requirements-api.txt
+    pip install -r requirements.txt
 
 # ---------------------------------------------------
 # Copy application code
