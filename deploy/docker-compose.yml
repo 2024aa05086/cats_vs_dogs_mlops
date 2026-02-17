@@ -1,6 +1,6 @@
 services:
   api:
-    image: ghcr.io/${GITHUB_REPO_OWNER:-local}/cats-dogs-inference:api
+    image: ghcr.io/2024aa05086/cats-dogs-inference:api
     ports:
       - "8000:8000"
     environment:
@@ -15,7 +15,7 @@ services:
       start_period: 15s
 
   ui:
-    image: ghcr.io/${GITHUB_REPO_OWNER:-local}/cats-dogs-inference:ui
+    image: ghcr.io/2024aa05086/cats-dogs-inference:ui
     ports:
       - "7860:7860"
     environment:
