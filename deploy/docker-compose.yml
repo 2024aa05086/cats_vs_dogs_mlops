@@ -13,7 +13,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
-
+    volumes:
+      - /home/cloud/catsdogs/models:/app/models:ro
+      - /home/cloud/catsdogs/logs:/app/logs
   ui:
     image: ghcr.io/2024aa05086/cats-dogs-inference:ui
     ports:
