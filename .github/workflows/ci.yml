@@ -38,6 +38,16 @@ jobs:
         pip install -e .
 
     # ---------------------------------------------------
+     # Run DVC
+    # ---------------------------------------------------
+
+    - name: Run DVC train to generate model (main only)
+      if: github.ref == 'refs/heads/main'
+      run: |
+         dvc repro train
+    
+
+    # ---------------------------------------------------
     # Run tests
     # ---------------------------------------------------
     - name: Run unit tests
