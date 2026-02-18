@@ -45,6 +45,8 @@ COPY src ./src
 # Bake model artifacts into image (required for reliable CD)
 # ---------------------------------------------------
 COPY models ./models
+COPY models/label_map.json ./models/label_map.json
+COPY models/metadata.json ./models/metadata.json
 
 # ---------------------------------------------------
 # Fix permissions for non-root runtime
