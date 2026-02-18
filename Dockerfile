@@ -46,7 +46,7 @@ COPY src ./src
 # ---------------------------------------------------
 COPY models ./models
 COPY models/label_map.json ./models/label_map.json
-COPY models/metadata.json ./models/metadata.json
+COPY models/model.keras ./models/model.keras
 
 # ---------------------------------------------------
 # Fix permissions for non-root runtime
