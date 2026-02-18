@@ -7,7 +7,12 @@ spec:
   selector:
     app: cats-dogs-inference
   ports:
-    - name: http
-      port: 80
+    - name: api
+      port: 8000
       targetPort: 8000
       nodePort: 30080
+
+    - name: ui
+      port: 7860
+      targetPort: 7860
+      nodePort: 30081
