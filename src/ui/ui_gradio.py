@@ -4,79 +4,60 @@ import requests
 import gradio as gr
 from PIL import Image
 
-# ---------------------------------------------------
-# API configuration (Docker/K8s friendly)
-# ---------------------------------------------------
-API_URL = os.getenv("API_URL", "http://api:8000/predict")
+# API_URL from environment variable
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000/predict")
 
 
-# ---------------------------------------------------
-# Prediction function
-# ---------------------------------------------------
 def predict_from_api(img: Image.Image):
-
     if img is None:
         return "No image provided.", None
 
+    # Convert PIL Image -> JPEG bytes
+    buf = io.BytesIO()
+    img.convert("RGB").save(buf, format="JPEG", quality=95)
+    buf.seek(0)
+
+    files = {"file": ("upload.jpg", buf, "image/jpeg")}
+
     try:
-        # Convert PIL -> JPEG bytes
-        buf = io.BytesIO()
-        img.convert("RGB").save(buf, format="JPEG", quality=95)
-        buf.seek(0)
+        r = requests.post(API_URL, files=files, timeout=60)
+        r.raise_for_status()
+    except requests.RequestException as e:
+        return f"API request failed: {e}", None
 
-        files = {"file": ("upload.jpg", buf, "image/jpeg")}
+    data = r.json()
+    label = data.get("label", "unknown")
+    # gr.Label expects a dict of {string_label: float_probability}
+    probs = data.get("probabilities", {})
 
-        response = requests.post(API_URL, files=files, timeout=60)
-
-        if response.status_code != 200:
-            return f"API error {response.status_code}: {response.text}", None
-
-        data = response.json()
-
-        label = data.get("label", "unknown")
-        probs = data.get("probabilities", {})
-
-        return f"Predicted: {label}", probs
-
-    except Exception as e:
-        return f"Request failed: {str(e)}", None
+    return f"Predicted: {label}", probs
 
 
-# ---------------------------------------------------
-# UI Layout
-# ---------------------------------------------------
+# Using the modern Gradio 5 interface style
 with gr.Blocks(title="Cats vs Dogs Predictor") as demo:
-
     gr.Markdown("# Cats vs Dogs - Prediction UI")
-    gr.Markdown(
-        "Upload an image → UI calls FastAPI `/predict` → displays prediction."
-    )
 
     with gr.Row():
-        inp = gr.Image(type="pil", label="Upload Image")
+        with gr.Column():
+            inp = gr.Image(type="pil", label="Upload Image")
+            btn = gr.Button("Predict", variant="primary")
 
         with gr.Column():
-            out_text = gr.Textbox(label="Result", lines=2)
-            out_label = gr.Label(label="Probabilities")
-
-    btn = gr.Button("Predict", variant="primary")
+            out_text = gr.Textbox(label="Top Prediction", interactive=False)
+            # gr.Label is the correct component for classification probabilities
+            out_probs = gr.Label(label="Probabilities", num_top_classes=2)
 
     btn.click(
         fn=predict_from_api,
         inputs=inp,
-        outputs=[out_text, out_label],
+        outputs=[out_text, out_probs]
     )
 
-    gr.Markdown(f"API Endpoint: `{API_URL}`")
+    gr.Markdown(f"Backend API: `{API_URL}`")
 
-
-# ---------------------------------------------------
-# Launch (Container-safe)
-# ---------------------------------------------------
 if __name__ == "__main__":
     demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
-        show_error=True,
     )

@@ -10,21 +10,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System dependencies required by PIL/OpenCV/Gradio
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python deps
 COPY requirements-ui.txt .
 RUN pip install --upgrade pip && pip install -r requirements-ui.txt
 
-# Copy ONLY UI source
-COPY src/ui ./src/ui
+# ✅ Copy the actual UI file from repo
+COPY src/ui/ui_gradio.py /app/ui_gradio.py
 
-# Expose Gradio port
 EXPOSE 7860
-
-# Run UI
-CMD ["python", "-m", "src.ui.ui_gradio"]
+CMD ["python", "/app/ui_gradio.py"]
