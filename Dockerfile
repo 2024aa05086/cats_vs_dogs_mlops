@@ -37,14 +37,20 @@ RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
 # ---------------------------------------------------
-# Copy application code
+# Cache-buster hook (used by CI build-args)
 # ---------------------------------------------------
-COPY src ./src
+ARG CACHE_BUSTER=0
+RUN echo "CACHE_BUSTER=${CACHE_BUSTER}"
+
+# ---------------------------------------------------
+# Copy app + model artifacts (set ownership during copy)
+# ---------------------------------------------------
+COPY --chown=appuser:appuser src /app/src
+COPY --chown=appuser:appuser models /app/models
 
 # ---------------------------------------------------
 # Bake model artifacts into image (required for reliable CD)
 # ---------------------------------------------------
-COPY models ./models
 COPY models/label_map.json ./models/label_map.json
 COPY models/model.keras ./models/model.keras
 

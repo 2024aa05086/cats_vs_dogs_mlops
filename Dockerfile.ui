@@ -1,24 +1,63 @@
 # ---------------------------------------------------
 # Cats vs Dogs - UI Container (Gradio)
 # ---------------------------------------------------
-
 FROM python:3.10-slim
 
+# ---------------------------------------------------
+# Environment
+# ---------------------------------------------------
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-WORKDIR /app
-
+# ---------------------------------------------------
+# System deps
+# ---------------------------------------------------
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
-COPY requirements-ui.txt .
-RUN pip install --upgrade pip && pip install -r requirements-ui.txt
+# ---------------------------------------------------
+# Create non-root user
+# ---------------------------------------------------
+RUN useradd -m -u 10001 appuser
 
-# ✅ Copy the actual UI file from repo
-COPY src/ui/ui_gradio.py /app/ui_gradio.py
+# ---------------------------------------------------
+# Workdir
+# ---------------------------------------------------
+WORKDIR /app
 
+# ---------------------------------------------------
+# Install deps
+# ---------------------------------------------------
+COPY requirements-ui.txt /app/requirements-ui.txt
+RUN python -m pip install --upgrade pip \
+ && python -m pip install -r /app/requirements-ui.txt
+
+# ---------------------------------------------------
+# Cache-buster hook (used by CI build-args)
+# ---------------------------------------------------
+ARG CACHE_BUSTER=0
+RUN echo "CACHE_BUSTER=${CACHE_BUSTER}"
+
+# ---------------------------------------------------
+# Copy UI code (owned by non-root)
+# ---------------------------------------------------
+COPY --chown=appuser:appuser src/ui/ui_gradio.py /app/ui_gradio.py
+
+# ---------------------------------------------------
+# Runtime
+# ---------------------------------------------------
 EXPOSE 7860
+USER appuser
+
+# ---------------------------------------------------
+# Healthcheck (optional but recommended)
+# ---------------------------------------------------
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+  CMD curl -fsS http://localhost:7860/ || exit 1
+
+# ---------------------------------------------------
+# Start UI
+# ---------------------------------------------------
 CMD ["python", "/app/ui_gradio.py"]
