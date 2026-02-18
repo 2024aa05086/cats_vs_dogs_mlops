@@ -1,0 +1,11 @@
+gradio==4.44.0
+gradio_client==0.16.4
+
+fastapi==0.111.0
+pydantic==2.7.4
+starlette==0.37.2
+
+huggingface_hub==0.24.6
+
+requests==2.32.3
+pillow==10.4.0
