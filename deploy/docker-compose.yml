@@ -1,4 +1,7 @@
+version: "3.9"
+
 services:
+
   api:
     image: ghcr.io/2024aa05086/cats-dogs-inference:api
     ports:
@@ -6,15 +9,10 @@ services:
     environment:
       - MODEL_PATH=/app/models/model.keras
       - LABEL_MAP_PATH=/app/models/label_map.json
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
     volumes:
-      - /home/cloud/catsdogs/logs:/app/logs:rw
+      - ./models:/app/models:ro
+      - ./logs:/app/logs
+    restart: unless-stopped
 
   ui:
     image: ghcr.io/2024aa05086/cats-dogs-inference:ui
@@ -23,6 +21,32 @@ services:
     environment:
       - API_URL=http://api:8000/predict
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    depends_on:
+      - api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-storage:

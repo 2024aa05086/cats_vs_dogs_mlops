@@ -30,6 +30,20 @@ import structlog
 from src.api.logging import configure_logging
 from src.api.model_loader import load_label_map, load_model, predict_image
 
+from prometheus_client import Counter, Histogram, generate_latest
+from fastapi.responses import Response
+import time
+
+REQUEST_COUNT = Counter(
+    "inference_requests_total",
+    "Total inference requests"
+)
+
+REQUEST_LATENCY = Histogram(
+    "inference_latency_seconds",
+    "Inference latency"
+)
+
 
 configure_logging()
 log = structlog.get_logger()
@@ -61,12 +75,13 @@ def health():
 
 @app.get("/metrics")
 def metrics():
-    return PlainTextResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+    return Response(generate_latest(), media_type="text/plain")
 
 
 @app.post("/predict")
 def predict(file: UploadFile = File(...)):
     req_id = str(uuid.uuid4())
+    REQUEST_COUNT.inc()
     start = time.time()
     endpoint = "/predict"
 
@@ -98,7 +113,7 @@ def predict(file: UploadFile = File(...)):
             pred_label=label,
             prob_dog=round(prob_dog, 6),
         )
-
+        REQUEST_LATENCY.observe(time.time() - start)
         return {
             "request_id": req_id,
             "label": label,
