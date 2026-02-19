@@ -9,6 +9,8 @@ Endpoints:
 Monitoring:
 - request count (Counter)
 - request latency (Histogram)
+- prediction label count (Counter)
+- last predicted probabilities (Gauge)
 
 Logging:
 - JSON structured logs (request id, endpoint, latency_ms, outcome)
@@ -29,9 +31,18 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST,
     CollectorRegistry,
     Counter,
+    Gauge,
     Histogram,
     generate_latest,
 )
+
+# IMPORTANT for multiprocess (gunicorn/uvicorn workers)
+# If you run multiple workers, set env var:
+#   PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc_dir
+# and ensure the directory exists and is writable.
+PROM_MULTIPROC_DIR = os.getenv("PROMETHEUS_MULTIPROC_DIR")
+if PROM_MULTIPROC_DIR:
+    from prometheus_client import multiprocess  # type: ignore
 
 from src.api.logging import configure_logging
 from src.api.model_loader import load_label_map, load_model, predict_image
@@ -49,9 +60,12 @@ MODEL_PATH = os.getenv("MODEL_PATH", "models/model.keras")
 LABEL_MAP_PATH = os.getenv("LABEL_MAP_PATH", "models/label_map.json")
 
 # --------------------------------------------------------------------
-# Prometheus metrics (custom registry to avoid duplicate timeseries)
+# Prometheus registry
 # --------------------------------------------------------------------
+# If multiprocess enabled, we must build metrics from multiprocess files.
 REGISTRY = CollectorRegistry(auto_describe=True)
+if PROM_MULTIPROC_DIR:
+    multiprocess.MultiProcessCollector(REGISTRY)
 
 REQUESTS = Counter(
     "inference_requests_total",
@@ -63,7 +77,21 @@ REQUESTS = Counter(
 LATENCY = Histogram(
     "inference_latency_seconds",
     "Inference latency in seconds",
-    ["endpoint"],
+    ["endpoint", "status"],
+    registry=REGISTRY,
+)
+
+PREDICTIONS = Counter(
+    "inference_predictions_total",
+    "Total number of predictions by label",
+    ["endpoint", "label"],
+    registry=REGISTRY,
+)
+
+LAST_PROB = Gauge(
+    "inference_last_probability",
+    "Last predicted probability (useful for quick debugging; not a distribution)",
+    ["endpoint", "label"],
     registry=REGISTRY,
 )
 
@@ -103,6 +131,7 @@ def predict(file: UploadFile = File(...)):
 
     if model is None:
         REQUESTS.labels(endpoint=endpoint, status="error").inc()
+        LATENCY.labels(endpoint=endpoint, status="error").observe(time.time() - start)
         raise HTTPException(status_code=503, detail="Model not loaded")
 
     try:
@@ -116,11 +145,17 @@ def predict(file: UploadFile = File(...)):
 
         pred_int, prob_dog = predict_image(model, img_rgb)
         label = label_map.get(pred_int, str(pred_int))
-        prob_cat = 1.0 - float(prob_dog)
+        prob_dog = float(prob_dog)
+        prob_cat = 1.0 - prob_dog
 
         latency_s = time.time() - start
-        LATENCY.labels(endpoint=endpoint).observe(latency_s)
+
+        # Metrics
         REQUESTS.labels(endpoint=endpoint, status="ok").inc()
+        LATENCY.labels(endpoint=endpoint, status="ok").observe(latency_s)
+        PREDICTIONS.labels(endpoint=endpoint, label=label).inc()
+        LAST_PROB.labels(endpoint=endpoint, label="dog").set(prob_dog)
+        LAST_PROB.labels(endpoint=endpoint, label="cat").set(prob_cat)
 
         log.info(
             "prediction",
@@ -129,20 +164,21 @@ def predict(file: UploadFile = File(...)):
             filename=file.filename,
             latency_ms=int(latency_s * 1000),
             pred_label=label,
-            prob_dog=round(float(prob_dog), 6),
+            prob_dog=round(prob_dog, 6),
             outcome="ok",
         )
 
         return {
             "request_id": req_id,
             "label": label,
-            "probabilities": {"cat": prob_cat, "dog": float(prob_dog)},
+            "probabilities": {"cat": prob_cat, "dog": prob_dog},
         }
 
     except Exception as e:
         latency_s = time.time() - start
-        LATENCY.labels(endpoint=endpoint).observe(latency_s)
+
         REQUESTS.labels(endpoint=endpoint, status="error").inc()
+        LATENCY.labels(endpoint=endpoint, status="error").observe(latency_s)
 
         log.error(
             "prediction_failed",
