@@ -36,16 +36,16 @@ stages:
     outs:
     - path: data/processed
       hash: md5
-      md5: 4f478b10c91f6f4f91f1ffa51b576b78.dir
-      size: 417840667
+      md5: 525efbb5b42c6d114a018b0d7aaff74a.dir
+      size: 417840673
       nfiles: 24947
   train:
     cmd: python -m src.models.train --params params.yaml
     deps:
     - path: data/processed
       hash: md5
-      md5: 4f478b10c91f6f4f91f1ffa51b576b78.dir
-      size: 417840667
+      md5: 525efbb5b42c6d114a018b0d7aaff74a.dir
+      size: 417840673
       nfiles: 24947
     - path: params.yaml
       hash: md5
@@ -61,26 +61,26 @@ stages:
       size: 1834
     - path: src/models/train.py
       hash: md5
-      md5: bfc671f6e92a2ab42f2ecc66d4f0a480
-      size: 5334
+      md5: 01f27446578aeb0a07b09b76125102b3
+      size: 7821
     outs:
     - path: models/label_map.json
       hash: md5
-      md5: ca8bacf924fa7f17f31365d5910facbe
-      size: 33
+      md5: 800e6509b07383c6ecf9e0153a0e8a2a
+      size: 30
     - path: models/model.keras
       hash: md5
-      md5: 62118d4c328f438d0ee1677ea1123dde
-      size: 22681400
+      md5: f5d4e542c3ab4c49c2c8605f1b9ab76e
+      size: 22681617
     - path: reports/confusion_matrix.png
       hash: md5
-      md5: 611565a77f4303512fb200c5ca3483a2
-      size: 28857
+      md5: 9cdf690b395f2a1b2af32f2494ab75c8
+      size: 30461
     - path: reports/metrics.json
       hash: md5
-      md5: d993a9bee65953594b80504bb00d9ef6
-      size: 135
+      md5: 4b46a1a0646ed19a97a6782726b1f427
+      size: 116
     - path: reports/training_curves.png
       hash: md5
-      md5: 6792f030c22943c42ea4c1ec93220b37
-      size: 75813
+      md5: 3d0c361591c094a4c320dc3da7093d80
+      size: 54802
