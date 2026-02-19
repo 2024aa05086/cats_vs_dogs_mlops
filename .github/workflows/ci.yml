@@ -50,20 +50,17 @@ jobs:
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
 
+    - name: Commit DVC lock + ignore rules
+      if: github.ref == 'refs/heads/main'
+      run: |
+        git add dvc.lock models/.gitignore .dvc/.gitignore dvc.yaml
+        git diff --cached --quiet || git commit -m "CI: Update pipeline lock [skip ci]"
+        git push
+
     - name: Push model to DVC remote (non-blocking)
       if: github.ref == 'refs/heads/main'
       run: |
         dvc push || echo "Skipping dvc push: no remote configured"
-
-    - name: Commit trained model metadata
-      if: github.ref == 'refs/heads/main'
-      run: |
-        git add dvc.lock models/.gitignore .dvc/.gitignore
-        git diff --cached --quiet || git commit -m "CI: Update trained model [skip ci]"
-
-    - name: Push changes
-      if: github.ref == 'refs/heads/main'
-      run: git push
 
     - name: Verify model artifacts
       if: github.ref == 'refs/heads/main'
