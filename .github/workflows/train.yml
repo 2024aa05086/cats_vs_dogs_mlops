@@ -3,7 +3,10 @@ name: Train (DVC)
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 2 * * *"  # daily 2 AM UTC (optional)
+    - cron: "0 2 * * *"  # daily 2 AM UTC
+
+permissions:
+  contents: write
 
 jobs:
   train:
@@ -14,6 +17,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -43,16 +49,29 @@ jobs:
         run: |
           dvc repro
 
-      # Optional: if you configured a DVC remote in .dvc/config, enable this:
-      # - name: Push artifacts to DVC remote
-      #   run: dvc push
+      - name: Configure Git
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
 
-      - name: Upload model + reports artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: trained-artifacts-${{ github.sha }}
-          path: |
-            models
-            reports
-            dvc.lock
-            params.yaml
+      - name: Commit DVC lock + ignore rules
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git add dvc.lock models/.gitignore .dvc/.gitignore dvc.yaml
+          git diff --cached --quiet || git commit -m "CI: Update pipeline lock [skip ci]"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push
+
+      - name: Push model to DVC remote (non-blocking)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          dvc push || echo "Skipping dvc push: no remote configured"
+
+      - name: Verify model artifacts
+        if: github.ref == 'refs/heads/main'
+        run: |
+          ls -lah models
+          test -f models/model.keras
+          test -f models/label_map.json

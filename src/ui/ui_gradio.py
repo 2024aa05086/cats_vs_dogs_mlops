@@ -33,7 +33,6 @@ def predict_from_api(img: Image.Image):
     return f"Predicted: {label}", probs
 
 
-# Using the modern Gradio 5 interface style
 with gr.Blocks(title="Cats vs Dogs Predictor") as demo:
     gr.Markdown("# Cats vs Dogs - Prediction UI")
 
