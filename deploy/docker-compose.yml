@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   api:
-    image: ghcr.io/2024aa05086/cats-dogs-inference:api
+    image: ghcr.io/2024aa05086/cats-dogs-inference:backend-api
     ports:
       - "8000:8000"
     environment:

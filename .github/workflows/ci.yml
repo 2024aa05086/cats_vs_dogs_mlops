@@ -107,8 +107,8 @@ jobs:
         build-args: |
           CACHE_BUSTER=${{ steps.vars.outputs.BUILD_TIME }}
         tags: |
-          ghcr.io/${{ github.repository_owner }}/cats-dogs-inference:api
-          ghcr.io/${{ github.repository_owner }}/cats-dogs-inference:api-${{ github.sha }}
+          ghcr.io/${{ github.repository_owner }}/cats-dogs-inference:backend-api
+          ghcr.io/${{ github.repository_owner }}/cats-dogs-inference:backend-api-${{ github.sha }}
 
     # ---------------------------------------------------
     # Build & Push UI (FORCED)
