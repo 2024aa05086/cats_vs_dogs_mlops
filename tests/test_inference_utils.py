@@ -16,3 +16,4 @@ def test_predict_image_returns_expected():
 
     assert pred == 1
     assert 0.0 <= prob <= 1.0
+2
