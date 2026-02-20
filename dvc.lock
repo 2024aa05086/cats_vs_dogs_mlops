@@ -70,17 +70,17 @@ stages:
       size: 30
     - path: models/model.keras
       hash: md5
-      md5: f5d4e542c3ab4c49c2c8605f1b9ab76e
+      md5: 255449aaf4498cedaf7a0fc1999f0f5e
       size: 22681617
     - path: reports/confusion_matrix.png
       hash: md5
-      md5: 9cdf690b395f2a1b2af32f2494ab75c8
-      size: 30461
+      md5: 9ecbacdbd76ca43d0b7b4a22ffa3ede3
+      size: 29004
     - path: reports/metrics.json
       hash: md5
-      md5: 4b46a1a0646ed19a97a6782726b1f427
-      size: 116
+      md5: 521658c2e1fcd2a67e09b4d842a95ec4
+      size: 131
     - path: reports/training_curves.png
       hash: md5
-      md5: 3d0c361591c094a4c320dc3da7093d80
-      size: 54802
+      md5: f7d89183eef7bd3b8e38fea89f0bd9a9
+      size: 72684
