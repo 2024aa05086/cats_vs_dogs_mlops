@@ -1,2 +1,3 @@
 ﻿*
 !*.dvc
+/label_map.json
