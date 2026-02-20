@@ -86,5 +86,13 @@ To reproduce the data fetching and model training:
 2. Run `dvc repro` to execute the data pipeline and train the model.
 3. Run `mlflow ui --backend-store-uri mlruns` to view the training metrics at `http://localhost:5000`.
 
+## Code Base and Resources
+
+  - Code Base :  https://github.com/2024aa05086/cats_vs_dogs_mlops  
+  - Dataset : https://www.kaggle.com/datasets/bhavikjikadara/dog-and-cat-classification-dataset
+  - Packages : https://github.com/2024aa05086/cats_vs_dogs_mlops/pkgs/container/cats-dogs-inference
+ 
+
+
 ##  Conclusion
 This repository demonstrates a fully structured, production-ready MLOps workflow. It bridges the gap between raw data and a deployed application by incorporating industry-standard tools for versioning (Git/DVC), tracking (MLflow), containerization (Docker), API creation (FastAPI), web interfaces (Gradio), and CI/CD (GitHub Actions). We hope this serves as a great learning resource and a solid foundation for your own machine learning projects!
